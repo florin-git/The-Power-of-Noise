@@ -1,0 +1,8 @@
+tqdm
+numpy
+pandas
+transformers
+ijson
+accelerate
+einops
+bitsandbytes

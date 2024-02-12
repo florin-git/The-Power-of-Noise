@@ -76,7 +76,7 @@ def load_search_results(args: argparse.Namespace) -> List[Tuple[List[int], List[
     if args.use_random:
         search_results_path = info['random_results_path']
     elif args.use_adore:
-        search_results_path = info['adore_results_path']
+        search_results_path = info['adore_search_results_path']
     else:
         # Search results from Contriever
         search_results_path = info['contriever_search_results_path'] 

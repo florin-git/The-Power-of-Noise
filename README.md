@@ -12,7 +12,7 @@ conda activate power_of_noise
 ```
 pip install -r requirements.txt
 ```
-3. Download data
+3. Download data from the following [Google Drive link](https://drive.google.com/drive/folders/1MfR7mJ76tyVpjbMwUkMVbEjOQKpdL-Lq?usp=sharing).
 
 ## References
 If you find this repository useful, please consider giving a star and citing this work:
