@@ -58,9 +58,8 @@ A subset contains only the documents present in the search results by the retrie
 These subset can be found in the Google Drive under the folder `data/processed`. 
 
 
-### Natural Question
+### Natural Questions
 
-<!-- The dataset is the open version of NQ with the exclusion of those queries that have a corresponding gold document exceeding 512 tokens. The train set has 72,209 examples, instead the test set 2,889 ones. In these experiments, the validation set was not used, but can be download with the other splits from HuggingFace: -->
 The NQ dataset, curated to exclude entries with gold documents over 512 tokens, includes 72,209 training and 2,889 test examples. In these experiments, the validation set was not used, but can be download with the other splits from HuggingFace:
 ```
 from datasets import load_dataset
@@ -73,7 +72,7 @@ A sample in the dataset has the following format:
     'example_id' (int64): an identifier for the question, consistent with the original NQ dataset,
     'question' (str): a question, that is identical to the question in the original NQ,
     'answers' (List[str]): the list of correct answers in the original NQ,
-    'text' (string): gold document, associated with the question, in the original NQ,
+    'text' (str): gold document, associated with the question, in the original NQ,
     'idx_gold_in_corpus' (int64): index of the gold document in the full corpus.
 }
 
