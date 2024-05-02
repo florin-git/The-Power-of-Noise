@@ -215,7 +215,7 @@ def parse_arguments():
     parser.add_argument('--use_adore', type=str2bool, help="Use the retrieved documents from ADORE")
     parser.add_argument('--gold_position', type=int, help='The (0-indexed) position of the gold document in the context')
     parser.add_argument('--num_documents_in_context', type=int, help='Total number of documents in the context')
-    parser.add_argument('--get_documents_without_answer', type=str2bool, help='Select only documents without the answer (e.g., related)')
+    parser.add_argument('--get_documents_without_answer', type=str2bool, help='Select only documents without the answer (e.g., distracting)')
 
     parser.add_argument('--use_bm25', type=str2bool, help="Use the retrieved documents from BM25")
     parser.add_argument('--num_retrieved_documents', type=int, help='Number of retrieved documents in the context')

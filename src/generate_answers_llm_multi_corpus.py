@@ -46,8 +46,9 @@ def parse_arguments():
     parser.add_argument('--num_main_documents', type=int, help='Number of documents in the context from the main corpus')
     parser.add_argument('--num_other_documents', type=int, help='Number of documents in the context from the other corpus')
     parser.add_argument('--put_main_first', type=str2bool, help='Put the documents of the main corpus first in the context', default=False)
-    parser.add_argument('--get_documents_without_answer', type=str2bool, help='Select only documents without the answer (e.g., related)', default=False)
+    parser.add_argument('--get_documents_without_answer', type=str2bool, help='Select only documents without the answer (e.g., distracting)', default=False)
     parser.add_argument('--use_test', type=str2bool, help='Use the test set', default=True)
+    parser.add_argument('--max_new_tokens', type=int, help='Maximum number of tokens to generate', default=15)
     parser.add_argument('--batch_size', type=int)
     parser.add_argument('--save_every', type=int, default=250)
 
@@ -58,8 +59,8 @@ def parse_arguments():
 
     if args.num_main_documents is None or args.num_other_documents is None:
         parser.error("'num_main_documents' and 'num_other_documents' must be specified")
-    if args.num_main_documents <= 0 or args.num_other_documents <= 0:
-        parser.error("'num_main_documents' and 'num_other_documents' must be a positive integer.")
+    if args.num_main_documents <= 0 and args.num_other_documents <= 0:
+        parser.error("'num_main_documents' and 'num_other_documents' must not both be zero or negative.")
 
     return args
 
@@ -204,7 +205,7 @@ def generate_and_save(
     all_info = []  
     for idx, prompt_batch in enumerate(tqdm(prompt_dataloader)):
         prompts = prompt_batch['prompt']
-        generated_output = llm.generate(prompts)
+        generated_output = llm.generate(prompts, max_new_tokens=args.max_new_tokens)
         
         generated_answers = []
         for output in generated_output:

@@ -20,16 +20,16 @@ pip install -r requirements.txt
 ## Data
 The corpus and NQ datasets can be downloaded from HuggingFace using the code in the respective sections.
 
-In the experiments was not used the entire training set, but a sample of 10K, which can be found in the `data` folder of this repository.
+The full training set was not used for the experiments; instead, a smaller sample of 10K entries was employed, and is available in the `data` folder of this repository. For the experiments described in the "RAG in Practice" section, the test set was utilized.
 
 Data not present in this repository or not downloadable from HuggingFace can be found in this [Google Drive](https://drive.google.com/drive/folders/1MfR7mJ76tyVpjbMwUkMVbEjOQKpdL-Lq?usp=sharing).
 
 
 ### Corpus
 
-- **Original Source**: The corpus originates from the English Wikipedia (Dec. 20, 2018), where each document is segmented into non-overlapping passages of 100 words. The original corpus can be download from this [link](https://dl.fbaipublicfiles.com/dpr/wikipedia_split/psgs_w100.tsv.gz).
+- **Original Source**: The corpus originates from the English Wikipedia (Dec. 20, 2018), where each document is segmented into non-overlapping passages of 100 words. The original corpus can be downloaded from this [link](https://dl.fbaipublicfiles.com/dpr/wikipedia_split/psgs_w100.tsv.gz).
 
-- **Processing**: We integrated gold documents from the [NQ dataset](https://ai.google.com/research/NaturalQuestions), applying duplicate filtering for precise query-document matching. Documents exceeding 512 tokens (tokenized with Llama2) were excluded to maintain manageable input sizes for LLMs, resulting in a final corpus of 21,035,236 documents.
+- **Processing**: We integrated gold documents from the [NQ dataset](https://ai.google.com/research/NaturalQuestions) in the corpus, applying duplicate filtering for precise query-document matching. Documents exceeding 512 tokens (tokenized with Llama2) were excluded to maintain manageable input sizes for LLMs, resulting in a final corpus of 21,035,236 documents.
 
 The processed dataset is available on HuggingFace:
 ```
@@ -55,12 +55,12 @@ Considering the substantial memory requirements (~25Gb) for loading the entire c
 
 A subset contains only the documents present in the search results by the retrievers or by random sampling for a the specific configuration (see **Generation** section). In this way, when running the generation, it is not needed to load the entire corpus in RAM, but only the documents that could possibly be included in the prompt of the LLMs. 
 
-These subset can be found in the Google Drive under the folder `data/processed`. 
+These subsets can be found in the Google Drive under the folder `data/processed`. 
 
 
 ### Natural Questions
 
-The NQ dataset, curated to exclude entries with gold documents over 512 tokens, includes 72,209 training and 2,889 test examples. In these experiments, the validation set was not used, but can be download with the other splits from HuggingFace:
+The NQ dataset, curated to exclude entries with gold documents over 512 tokens, includes 72,209 training and 2,889 test examples. In these experiments, the validation set was not used, but can be downloaded along with the other splits from HuggingFace:
 ```
 from datasets import load_dataset
 dataset = load_dataset('florin-hf/nq_open_gold')
@@ -90,7 +90,7 @@ Ex.
 
 ### 1. Retrieval
 
-In the first phase of a RAG system, a retriever is employed to search the top-ranked documents based on a given similarity metric. In these experiments three different retrievers were used: Contriever, ADORE and BM25. The search results of the three models are presented in the data folder (e.g., `data/contriever_search_results_at150.pkl`). Each result is a tuple containing in the first position the indices of the top-ranked documents in the corpus; and as second position their corresponding scores. In case of dense retriever, an Inner Product (IP) search was adopted, thus the higher the score the closer the embeddings in the vector space.
+In the first phase of a RAG system, a retriever is employed to search the top-ranked documents based on a given similarity metric. In these experiments three different retrievers were used: Contriever, ADORE and BM25. The search results of the three models are presented in the data folder (e.g., `data/contriever_search_results_at150.pkl`). Each result is a tuple containing in the first position the indices of the top-ranked documents in the corpus; and as second position their corresponding scores. In the case of dense retriever, an Inner Product (IP) search was adopted, thus the higher the score the closer the embeddings in the vector space.
 
 ### 2. Generation
 
@@ -108,9 +108,9 @@ Our experiments tested different prompt structures across four LLMs. The table b
 In the closed-book QA configuration, the system generates answers based solely on the question, without external knowledge. The script `src/generate_answers_llm_only_query.py` allows to generate responses using only the task instruction and the query. A corresponding example script can be found in the file `example_scripts/run_generation_only_query.sh`.
 
 
-#### Gold & Related/Random
+#### Gold & Distracting/Random
 
-This configuration aims to replicate the first two tables of the paper, exploring how the inclusion of gold documents and related/irrelevant documents affects the performance. The script `src/generate_answers_llm.py` is used to manage this setup. For instance, to reproduce a scenario `Far` where the gold document is positioned last in a context of seven documents (one gold and six *related*), the script below can be run for Llama-2-7b-chat :
+This configuration aims to replicate the first two tables of the paper, exploring how the inclusion of gold documents and distracting/random documents affects the performance. The script `src/generate_answers_llm.py` is used to manage this setup. For instance, to reproduce a scenario `Far` where the gold document is positioned last in a context of seven documents (one gold and six *distracting*), the script below can be run for Llama-2-7b-chat :
 ```
 python src/generate_answers_llm.py \
     --output_dir data/gen_res \
@@ -126,12 +126,12 @@ python src/generate_answers_llm.py \
     --save_every 250
 ```
 
-In particular, we set `use_random` and `use_adore` to `False` which will load the default search results, hence the ones from the Contriever. Then, with the parameter `get_documents_without_answer` set to `True` we are specifying to include only the _related_ documents, i.e., documents that are assigned a high score by the retriever but do not contain the answer. Finally, we choose the position of the gold and the total number of documents in the context, respectively with `gold_position` and `num_documents_in_context`.
-In case, we want to use random documents we set `use_random` to `True`.
+In particular, we set `use_random` and `use_adore` to `False` which will load the default search results, hence the ones from the Contriever. Then, with the parameter `get_documents_without_answer` set to `True` we are specifying to include only the _distracting_ documents, i.e., documents that are assigned a high score by the retriever but do not contain the answer. Finally, we choose the position of the gold (0-indexed) and the total number of documents in the context, respectively with `gold_position` and `num_documents_in_context`.
+In case we want to use random documents we set `use_random` to `True`.
 
 #### Retrieved & NQ Random
 
-Focusing on a scenario without gold documents, this setup employs retrieved documents alongside randomly chosen entries (irrelevant) from the NQ dataset. The script `src/generate_answers_llm_mixed.py` is designed for this purpose:
+Focusing on a scenario without gold documents, this setup employs retrieved documents alongside randomly chosen entries from the NQ dataset. The script `src/generate_answers_llm_mixed.py` is designed for this purpose:
 ```
 python src/generate_answers_llm_mixed.py \
     --output_dir data/gen_res \
@@ -154,11 +154,11 @@ In this case, Falcon-7-instruct is used with the search results from BM25 (`use_
 Expanding on the concept of incorporating randomness into the context, this configuration introduces randomness from varied sources. The `src/generate_answers_llm_multi_corpus.py` script allows experimentation with documents from disparate corpora, such as a [Reddit dataset](https://huggingface.co/datasets/webis/tldr-17) or a collection of nonsensical sentences composed of random words (`data/processed/corpus_with_random_50_words`). 
 
 ## 3. Evaluation
-To evaluate the LLMs responses we use accuracy. In particular, one response is considered correct if at least one of the predefined correct answers is contained within the response produced by the LLM. 
+To evaluate the LLMs' responses, we use accuracy. In particular, one response is considered correct if at least one of the predefined correct answers is contained within the response produced by the LLM. 
 
 The code for reading and computing the accuracy is present in the `src/read_generation_results.py` file. For each of the generation case there is an example script (e.g., `example_scripts/run_read_gen_res.sh`). 
 
-For example, to read the generation results of the script in the **Gold & Related/Random** section, you can run:
+For example, to read the generation results of the script in the **Gold & Distracting/Random** section, you can run:
 ```
 python example_scripts/run_read_gen_res.py \
     --output_dir data/gen_res \

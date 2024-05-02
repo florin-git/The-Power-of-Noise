@@ -36,7 +36,8 @@ def parse_arguments():
     parser.add_argument('--use_adore', type=str2bool, help="Use the retrieved documents from ADORE", default=False)
     parser.add_argument('--gold_position', type=int, help='The (0-indexed) position of the gold document in the context')
     parser.add_argument('--num_documents_in_context', type=int, help='Total number of documents in the context')
-    parser.add_argument('--get_documents_without_answer', type=str2bool, help='Select only documents without the answer (e.g., related)', default=True)
+    parser.add_argument('--get_documents_without_answer', type=str2bool, help='Select only documents without the answer (e.g., distracting)', default=True)
+    parser.add_argument('--max_new_tokens', type=int, help='Maximum number of tokens to generate', default=15)
     parser.add_argument('--batch_size', type=int)
     parser.add_argument('--save_every', type=int, default=250)
 
@@ -154,7 +155,7 @@ def generate_and_save(
     all_info = []  
     for idx, prompt_batch in enumerate(tqdm(prompt_dataloader)):
         prompts = prompt_batch['prompt']
-        generated_output = llm.generate(prompts)
+        generated_output = llm.generate(prompts, max_new_tokens=args.max_new_tokens)
         
         generated_answers = []
         for output in generated_output:

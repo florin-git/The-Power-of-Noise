@@ -98,7 +98,7 @@ class LLM:
         return StoppingCriteriaList([StopOnTokens()])
     
     
-    def generate(self, prompt: str) -> List[str]:
+    def generate(self, prompt: str, max_new_tokens: int = 15) -> List[str]:
         """
         Generates text based on the given prompt.
         
@@ -119,7 +119,7 @@ class LLM:
         generated_ids = self.model.generate(
             **inputs,
             do_sample=False,
-            max_new_tokens=15,
+            max_new_tokens=max_new_tokens,
             repetition_penalty=1.1,
             stopping_criteria=self.stopping_criteria,
             pad_token_id=self.tokenizer.eos_token_id,

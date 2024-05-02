@@ -32,6 +32,7 @@ def parse_arguments():
     parser.add_argument('--llm_id', type=str, default='meta-llama/Llama-2-7b-chat-hf', help='LLM model identifier')
     parser.add_argument('--model_max_length', type=int, help='Maximum input length for the LLM model', default=4096)
     parser.add_argument('--use_test', type=str2bool, help='Use the test set', default=False)
+    parser.add_argument('--max_new_tokens', type=int, help='Maximum number of tokens to generate', default=15)
     parser.add_argument('--batch_size', type=int)
     parser.add_argument('--save_every', type=int, default=250)
 
@@ -90,7 +91,7 @@ def generate_and_save(
     all_info = []  
     for idx, prompt_batch in enumerate(tqdm(prompt_dataloader)):
         prompts = prompt_batch['prompt']
-        generated_output = llm.generate(prompts)
+        generated_output = llm.generate(prompts, max_new_tokens=args.max_new_tokens)
         
         generated_answers = []
         for output in generated_output:
