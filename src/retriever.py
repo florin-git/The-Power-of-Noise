@@ -1,3 +1,4 @@
+import os
 from typing import List, Optional, Dict
 from transformers import PreTrainedModel, AutoConfig, AutoModel, AutoTokenizer
 
@@ -73,20 +74,20 @@ class Retriever:
         doc_encoder: Optional[Encoder] = None,
         max_length: int = 512,
         add_special_tokens: bool = True,
-        norm_query: bool = False,
-        norm_doc: bool = False,
+        norm_query_emb: bool = False,
+        norm_doc_emb: bool = False,
         lower_case: bool = False,
         do_normalize_text: bool = False,
     ):
         
         self.device = device
         self.query_encoder = query_encoder.to(device)
-        self.doc_encoder = query_encoder if doc_encoder is None else doc_encoder.to(device)
+        self.doc_encoder = self.query_encoder if doc_encoder is None else doc_encoder.to(device)
         self.tokenizer = tokenizer
         self.max_length = max_length
         self.add_special_tokens = add_special_tokens
-        self.norm_query = norm_query
-        self.norm_doc = norm_doc
+        self.norm_query_emb = norm_query_emb
+        self.norm_doc_emb = norm_doc_emb
         self.lower_case = lower_case
         self.do_normalize_text = do_normalize_text
 
@@ -113,31 +114,41 @@ class Retriever:
                     return_tensors="pt",
                 ).to(self.device)
 
-                emb = self.query_encoder.encode(**q_inputs, normalize=self.norm_query)
+                emb = self.query_encoder.encode(**q_inputs, normalize=self.norm_query_emb)
                 all_embeddings.append(emb.cpu())
 
         all_embeddings = torch.cat(all_embeddings, dim=0)
         return all_embeddings
     
 
-    def encode_corpus(self, corpus: List[Dict[str, str]], batch_size: int, saving_dir: str, save_every: int = 500):
-        corpus = [c["title"] + " " + c["text"] if len(c["title"]) > 0 else c["text"] for c in corpus]
-        if self.do_normalize_text:
-            corpus = [normalize_text.normalize(c) for c in corpus]
-        if self.lower_case:
-            corpus = [c.lower() for c in corpus]
-
+    def encode_corpus(
+        self, 
+        corpus_info: List[Dict[str, str]], 
+        batch_size: int, 
+        output_dir: str, 
+        prefix_name: str,
+        save_every: int = 500
+    ) -> None:
         all_embeddings = []
         num_steps = 0
 
-        nbatch = (len(corpus) - 1) // batch_size + 1
+        nbatch = (len(corpus_info) - 1) // batch_size + 1
         with torch.no_grad():
             for k in range(nbatch):
                 start_idx = k * batch_size
-                end_idx = min((k + 1) * batch_size, len(corpus))
+                end_idx = min((k + 1) * batch_size, len(corpus_info))
+
+                corpus = [
+                    c["title"] + " " + c["text"] if len(c["title"]) > 0 else c["text"] 
+                    for c in corpus_info[start_idx: end_idx]
+                ]
+                if self.do_normalize_text:
+                    corpus = [normalize_text.normalize(c) for c in corpus]
+                if self.lower_case:
+                    corpus = [c.lower() for c in corpus]
 
                 doc_inputs = self.tokenizer(
-                    corpus[start_idx: end_idx],
+                    corpus,
                     max_length=self.max_length,
                     padding=True,
                     truncation=True,
@@ -145,7 +156,7 @@ class Retriever:
                     return_tensors="pt",
                 ).to(self.device)
 
-                emb = self.doc_encoder(**doc_inputs, normalize=self.norm_doc)
+                emb = self.doc_encoder.encode(**doc_inputs, normalize=self.norm_doc_emb)
                 all_embeddings.append(emb)
 
                 num_steps += 1
@@ -153,11 +164,10 @@ class Retriever:
                 if num_steps == save_every or k == nbatch - 1:
                     embeddings = torch.cat(all_embeddings, dim=0)
                     file_index = end_idx - 1  # Index of the last passage embedded in the batch
-                    filename = f'{saving_dir}/{file_index}_embeddings.npy'
-                    np.save(filename, embeddings.cpu().numpy())
+                    file_path = os.path.join(
+                        output_dir, f'{prefix_name}_{file_index}_embeddings.npy'
+                    )
+                    np.save(file_path, embeddings.cpu().numpy())
                     print(f"Saved embeddings for {file_index} passages.")
                     num_steps = 0
                     all_embeddings = []
-
-        all_embeddings = torch.cat(all_embeddings, dim=0)
-        return all_embeddings  

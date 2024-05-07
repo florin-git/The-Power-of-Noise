@@ -1,4 +1,5 @@
 import os
+import json
 import torch
 import ijson
 import pickle
@@ -38,6 +39,18 @@ def read_pickle(file_path: str):
 def write_pickle(data, file_path: str):
     with open(file_path, "wb") as writer:
         pickle.dump(data, writer)
+
+
+def read_json(file_path: str):
+    with open(file_path, "rb") as reader:
+        data = json.load(reader)
+    return data
+
+
+def write_json(data, file_path: str):
+    with open(file_path, "w") as writer:
+        json.dump(data, writer)
+
 
 def read_corpus_json(data_path: str, subset_to_full_idx_map: Optional[Dict[int, int]] = None) -> List[Dict]:
     """

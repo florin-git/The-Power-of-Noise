@@ -18,9 +18,8 @@ class Indexer(object):
         gpu_id (Optional[int]): Optional GPU ID for GPU acceleration.
         index_id_to_db_id (List[int]): A list of external IDs for the indexed vectors.
     """
-    def __init__(self, vector_sz: int, idx_type: str = 'IP', gpu_id: Optional[int] = None):
+    def __init__(self, vector_sz: int, idx_type: str = 'IP'):
         self.idx_type = idx_type
-        self.gpu_id = gpu_id
 
         if idx_type == 'IP':
             quantizer = faiss.IndexFlatIP(vector_sz)
@@ -109,7 +108,8 @@ class Indexer(object):
         self, 
         dir_path: str, 
         index_file_name: Optional[str] = None, 
-        meta_file_name: Optional[str] = None
+        meta_file_name: Optional[str] = None,
+        gpu_id: Optional[int] = None
     ):
         """
         Loads the index and its metadata from disk.
@@ -129,19 +129,19 @@ class Indexer(object):
         print(f'Loading index from {index_file}, meta data from {meta_file}')
 
         self.index = faiss.read_index(index_file)
-        print('Loaded index of type %s and size %d', type(self.index), self.index.ntotal)
+        print(f'Loaded index of type {type(self.index)} and size {self.index.ntotal}')
 
         self.index_id_to_db_id = read_pickle(meta_file)
         assert len(
             self.index_id_to_db_id) == self.index.ntotal, 'Deserialized index_id_to_db_id should match faiss index size'
         
         # Move index to GPU if specified
-        if self.gpu_id is not None:
+        if gpu_id is not None:
             res = faiss.StandardGpuResources()  
-            self.index_gpu = faiss.index_cpu_to_gpu(res, self.gpu_id , self.index)
+            self.index_gpu = faiss.index_cpu_to_gpu(res, gpu_id , self.index)
             del self.index
             self.index = self.index_gpu
-            print('Moved index to GPU %d', self.gpu_id)
+            print(f'Moved index to GPU {gpu_id}')
         
 
     def _update_id_mapping(self, db_ids: List[int]):

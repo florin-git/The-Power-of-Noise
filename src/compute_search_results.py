@@ -29,19 +29,23 @@ info = {
     }
 }
 
-
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Search and Index Utility.")
-    parser.add_argument('--faiss_dir', type=str, default='/path/to/data', help='Directory containing FAISS index data')
+    parser.add_argument('--faiss_dir', type=str, help='Directory containing FAISS index data')
     parser.add_argument('--use_index_on_gpu', type=str2bool, help='Flag to use index on GPU')
     parser.add_argument('--gpu_ids', nargs='+', type=int, help='GPU IDs for indexing, required if --use_index_on_gpu is set')
     parser.add_argument('--vector_sz', type=int, default=768, help='Size of the vectors to be indexed')
     parser.add_argument('--idx_type', type=str, default='IP', help='Index type (IP for Inner Product)')
     parser.add_argument('--encoder_id', type=str, default='facebook/contriever', help='Model identifier for the encoder')
+    parser.add_argument('--max_length_encoder', type=int, default=512, help='Maximum sequence length for the encoder')
+    parser.add_argument('--normalize_embeddings', type=str2bool, default=False, help='Whether to normalize embeddings')
+    parser.add_argument('--lower_case', type=str2bool, default=False, help='Whether to lower case the corpus text')
+    parser.add_argument('--do_normalize_text', type=str2bool, default=True, help='Whether to normalize the corpus text')
     parser.add_argument('--top_docs', type=int, default=150, help='Number of documents to retriever from similarity search')
     parser.add_argument('--use_test', type=str2bool, help='Use the test set', default=False)
     parser.add_argument('--output_dir', type=str, default='data/faiss', help='Output directory for saving search results')
-    parser.add_argument('--batch_size', type=int, default=516, help='Batch size for encoding queries')
+    parser.add_argument('--prefix_name', type=str, default='contriever', help='Initial part of the name of the saved search results')
+    parser.add_argument('--batch_size', type=int, default=512, help='Batch size for encoding queries')
     parser.add_argument('--index_batch_size', type=int, default=64, help='Batch size for FAISS search operations')
     
     args =  parser.parse_args()
@@ -67,8 +71,12 @@ def initialize_index(args: argparse.Namespace) -> List[Indexer]:
     indexes = []
     if args.use_index_on_gpu:
         for i, gpu_id in enumerate(args.gpu_ids):
-            index = Indexer(args.vector_sz, idx_type=args.idx_type, gpu_id=gpu_id)
-            index.deserialize_from(args.faiss_dir, f'IP_index{i+1}.faiss', f'IP_index{i+1}_meta.faiss')
+            index = Indexer(args.vector_sz, idx_type=args.idx_type)
+            index.deserialize_from(
+                args.faiss_dir, 
+                f'IP_index{i+1}.faiss', f'IP_index{i+1}_meta.faiss', 
+                gpu_id=gpu_id
+            )
             indexes.append(index)
     else: # CPU
         index = Indexer(args.vector_sz, idx_type=args.idx_type)
@@ -77,15 +85,20 @@ def initialize_index(args: argparse.Namespace) -> List[Indexer]:
     return indexes
 
 
-def initialize_retriever(encoder_id: str) -> Tuple[Encoder, Retriever]:
+def initialize_retriever(args: argparse.Namespace) -> Retriever:
     """Initialize the encoder and retriever."""
-    config = AutoConfig.from_pretrained(encoder_id)
+    config = AutoConfig.from_pretrained(args.encoder_id)
     encoder = Encoder(config).eval()
-    tokenizer = AutoTokenizer.from_pretrained(encoder_id)
+    tokenizer = AutoTokenizer.from_pretrained(args.encoder_id)
     retriever = Retriever(
-        device=device, query_encoder=encoder, 
-        tokenizer=tokenizer, do_normalize_text=True
+        device=device, tokenizer=tokenizer, 
+        query_encoder=encoder, 
+        max_length=args.max_length_encoder,
+        norm_query_emb=args.normalize_embeddings,
+        lower_case=args.lower_case,
+        do_normalize_text=args.do_normalize_text
     )
+
     return retriever
 
 
@@ -121,7 +134,7 @@ def save_search_results(
     """Save search results to a pickle file."""
     os.makedirs(args.output_dir, exist_ok=True)
     file_path = os.path.join(
-        args.output_dir, f'{args.idx_type}_search_results_at{args.top_docs}.pkl'
+        args.output_dir, f'{args.prefix_name}_{args.idx_type}_{args.split}_search_results_at{args.top_docs}.pkl'
     )
     write_pickle(search_results, file_path)
 
@@ -138,7 +151,7 @@ def main():
     indexes = initialize_index(args)
     print("Index loaded")
 
-    retriever = initialize_retriever(args.encoder_id)
+    retriever = initialize_retriever(args)
     query_embeddings = process_queries(retriever, queries, args.batch_size)
 
     print("Searching...")
@@ -150,6 +163,3 @@ def main():
 if __name__ == '__main__':
     seed_everything(SEED)
     main()
-
-
-
