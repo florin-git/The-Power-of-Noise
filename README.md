@@ -92,6 +92,18 @@ Ex.
 
 In the first phase of a RAG system, a retriever is employed to search the top-ranked documents based on a given similarity metric. In these experiments three different retrievers were used: Contriever, ADORE and BM25. The search results of the three models are presented in the data folder (e.g., `data/contriever_search_results_at150.pkl`). Each result is a tuple containing in the first position the indices of the top-ranked documents in the corpus; and as second position their corresponding scores. In the case of dense retriever, an Inner Product (IP) search was adopted, thus the higher the score the closer the embeddings in the vector space.
 
+The following three steps were used to compute search results for a dense retriever:
+##### 1. Compute Corpus Embeddings
+The `compute_corpus_embeddings.py` script computes embeddings in batches, storing them in the `output_dir`.
+
+##### 2. Index Embeddings:
+The `index_embeddings.py` script concatenates the piecewise stored embeddings and creates the index.
+- Single Index: Leave `percentages_for_index_splitting` empty.
+- Multiple Indices: Specify splitting percentages to create multiple indices that can be loaded into different GPUs.
+
+##### 3. Retrieve Top-k Documents
+The `compute_search_results.py` script retrieves the top-k documents for the given queries using the FAISS index/indices created earlier.
+
 ### 2. Generation
 
 Our experiments tested different prompt structures across four LLMs. The table below summarizes the LLMs used:
