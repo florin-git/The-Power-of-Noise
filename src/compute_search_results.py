@@ -74,7 +74,7 @@ def initialize_index(args: argparse.Namespace) -> List[Indexer]:
             index = Indexer(args.vector_sz, idx_type=args.idx_type)
             index.deserialize_from(
                 args.faiss_dir, 
-                f'IP_index{i+1}.faiss', f'IP_index{i+1}_meta.faiss', 
+                f'{args.idx_type}_index{i+1}.faiss', f'{args.idx_type}_index{i+1}_meta.faiss',
                 gpu_id=gpu_id
             )
             indexes.append(index)
@@ -130,7 +130,7 @@ def search_documents(
 def save_search_results(
     args: argparse.Namespace,
     search_results: List[Tuple[List[str], List[float]]], 
-):
+        
     """Save search results to a pickle file."""
     os.makedirs(args.output_dir, exist_ok=True)
     file_path = os.path.join(

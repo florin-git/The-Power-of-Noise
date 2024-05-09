@@ -129,6 +129,8 @@ class Retriever:
         prefix_name: str,
         save_every: int = 500
     ) -> None:
+        os.makedirs(output_dir, exist_ok=True)
+        
         all_embeddings = []
         num_steps = 0
 

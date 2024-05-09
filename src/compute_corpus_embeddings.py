@@ -25,7 +25,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument('--do_normalize_text', type=str2bool, default=True, help='Whether to normalize the corpus text')
     parser.add_argument('--output_dir', type=str, default='data/corpus/embeddings/', help='Output directory for saving embeddings')
     parser.add_argument('--prefix_name', type=str, default='contriever', help='Initial part of the name of the saved embeddings')
-    parser.add_argument('--batch_size', type=int, default=512, help='Batch size for encoding queries')
+    parser.add_argument('--batch_size', type=int, default=512, help='Batch size for embedding documents')
     parser.add_argument('--save_every', type=int, default=500)
     
     args =  parser.parse_args()
