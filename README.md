@@ -189,14 +189,16 @@ python example_scripts/run_read_gen_res.py \
 
 
 ## References
-If you find this repository useful, please consider giving a star and citing this work:
+If you find this repository useful, please consider giving it a star and citing this work:
 ```
-@misc{cuconasu2024power,
-      title={The Power of Noise: Redefining Retrieval for RAG Systems},
-      author={Florin Cuconasu and Giovanni Trappolini and Federico Siciliano and Simone Filice and Cesare Campagnano and Yoelle Maarek and Nicola Tonellotto and Fabrizio Silvestri},
-      year={2024},
-      eprint={2401.14887},
-      archivePrefix={arXiv},
-      primaryClass={cs.IR}
+@inproceedings{Cuconasu_2024, series={SIGIR 2024},
+   title={The Power of Noise: Redefining Retrieval for RAG Systems},
+   url={http://dx.doi.org/10.1145/3626772.3657834},
+   DOI={10.1145/3626772.3657834},
+   booktitle={Proceedings of the 47th International ACM SIGIR Conference on Research and Development in Information Retrieval},
+   publisher={ACM},
+   author={Cuconasu, Florin and Trappolini, Giovanni and Siciliano, Federico and Filice, Simone and Campagnano, Cesare and Maarek, Yoelle and Tonellotto, Nicola and Silvestri, Fabrizio},
+   year={2024},
+   month=jul, collection={SIGIR 2024}
 }
 ```
