@@ -1,6 +1,6 @@
 # The Power of Noise: Redefining Retrieval for RAG Systems
 
-This repository contains the code and data to reproduce the experiments from the paper [The Power of Noise: Redefining Retrieval for RAG Systems](https://arxiv.org/abs/2401.14887).
+This repository contains the code and data to reproduce the experiments from the paper [The Power of Noise: Redefining Retrieval for RAG Systems](https://dl.acm.org/doi/10.1145/3626772.3657834).
 
 ## Installation
 
