@@ -129,7 +129,7 @@ def search_documents(
 
 def save_search_results(
     args: argparse.Namespace,
-    search_results: List[Tuple[List[str], List[float]]], 
+    search_results: List[Tuple[List[str], List[float]]], ):
         
     """Save search results to a pickle file."""
     os.makedirs(args.output_dir, exist_ok=True)

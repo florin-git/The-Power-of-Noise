@@ -135,6 +135,7 @@ class PromptDataset(Dataset):
         gold_position: int = None,
         randomize_gold_position: bool = False,
         get_documents_without_answer: bool = False,
+        multiply_gold: bool = False,
     ):
         super().__init__()
         self.corpus = corpus
@@ -148,7 +149,7 @@ class PromptDataset(Dataset):
         self.gold_position = gold_position
         self.randomize_gold_position = randomize_gold_position
         self.get_documents_without_answer = get_documents_without_answer
-    
+        self.multiply_gold = multiply_gold
         
         self._validate_initialization_parameters()
         self._load_data()
@@ -262,6 +263,9 @@ class PromptDataset(Dataset):
             - The first list contains the formatted documents.
             - The second list contains the indices of the included documents.
         """
+
+        # TODO compute search results for noise here
+
         indices = self._get_indices(example_idx)
         updated_indices, gold_position = self._insert_gold_document_idx(
             indices, gold_document_idx
@@ -318,6 +322,9 @@ class PromptDataset(Dataset):
         gold_position: Optional[int]
     ) -> Tuple[List[str], List[int]]:
         """ Choose the appropriate method based on the flag """
+        if self.multiply_gold:
+            indices = [gold_document_idx] * self.num_documents_in_context
+            return self._get_documents_from_indices(indices)
         if self.get_documents_without_answer:
             return self._get_answerless_documents_from_indices(
                 indices, answers, gold_document_idx, gold_position
@@ -363,7 +370,7 @@ class PromptDataset(Dataset):
 
             doc_hash = hash_document(text)
             # Skip the document if it is a duplicate
-            if doc_hash in seen_hashes:
+            if not self.multiply_gold and doc_hash in seen_hashes:
                 continue
             seen_hashes.add(doc_hash)
             

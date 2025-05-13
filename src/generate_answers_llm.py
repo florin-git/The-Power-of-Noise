@@ -40,6 +40,7 @@ def parse_arguments():
     parser.add_argument('--max_new_tokens', type=int, help='Maximum number of tokens to generate', default=15)
     parser.add_argument('--batch_size', type=int)
     parser.add_argument('--save_every', type=int, default=250)
+    parser.add_argument('--multiply_gold', type=str2bool, help='Multiply the gold document in the context', default=False)
 
     args = parser.parse_args()
 
@@ -104,6 +105,7 @@ def initialize_dataset_and_loader(
         num_documents_in_context=args.num_documents_in_context,
         gold_position=args.gold_position,
         get_documents_without_answer=args.get_documents_without_answer,
+        multiply_gold=args.multiply_gold,
     )
     prompt_dataloader = DataLoader(
         prompt_ds,
@@ -169,6 +171,8 @@ def generate_and_save(
         if (idx + 1) % save_every == 0 or (idx + 1) == len(prompt_dataloader):
             print(f"Saving at {idx + 1}...")
             file_name = f"{saving_dir}/numdoc{num_doc}_gold_at{gold_pos}{rand_str}{answerless_str}_info_{idx+1}.pkl"
+            if args.multiply_gold:
+                f"{saving_dir}/numdoc{num_doc}_multgold_info_{idx+1}.pkl"
             write_pickle(all_info, file_name)
             all_info = []
 
