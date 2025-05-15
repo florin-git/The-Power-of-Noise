@@ -152,7 +152,7 @@ class PromptDataset(Dataset):
         self.get_documents_without_answer = get_documents_without_answer
         self.multiply_gold = multiply_gold
         self.fill_context_with = fill_context_with
-        
+
         self._validate_initialization_parameters()
         self._load_data()
 
