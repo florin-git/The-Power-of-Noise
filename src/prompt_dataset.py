@@ -136,6 +136,7 @@ class PromptDataset(Dataset):
         randomize_gold_position: bool = False,
         get_documents_without_answer: bool = False,
         multiply_gold: bool = False,
+        fill_context_with: str = ""
     ):
         super().__init__()
         self.corpus = corpus
@@ -150,6 +151,7 @@ class PromptDataset(Dataset):
         self.randomize_gold_position = randomize_gold_position
         self.get_documents_without_answer = get_documents_without_answer
         self.multiply_gold = multiply_gold
+        self.fill_context_with = fill_context_with
         
         self._validate_initialization_parameters()
         self._load_data()
@@ -330,10 +332,10 @@ class PromptDataset(Dataset):
                 indices, answers, gold_document_idx, gold_position
             )
         else:
-            return self._get_documents_from_indices(indices)
+            return self._get_documents_from_indices(indices, gold_document_idx)
             
 
-    def _get_documents_from_indices(self, indices: List[int]) -> Tuple[List[str], List[int]]:
+    def _get_documents_from_indices(self, indices: List[int], gold_document_idx = None) -> Tuple[List[str], List[int]]:
         """
         Selects documents from the corpus based on provided indices and formats them.
         Handles both full corpus and subsets by mapping indices if necessary.
@@ -375,6 +377,10 @@ class PromptDataset(Dataset):
             seen_hashes.add(doc_hash)
             
             doc_str = f"Document [{doc_idx}](Title: {title}) {text}"
+            if gold_document_idx != doc_idx:
+                rpt_num = len(doc_str) // len(self.fill_context_with)
+                doc_str = rpt_num * self.fill_context_with
+                doc_idx = -1
             formatted_documents.append(doc_str)
             document_indices.append(doc_idx)
 

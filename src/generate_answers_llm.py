@@ -41,6 +41,7 @@ def parse_arguments():
     parser.add_argument('--batch_size', type=int)
     parser.add_argument('--save_every', type=int, default=250)
     parser.add_argument('--multiply_gold', type=str2bool, help='Multiply the gold document in the context', default=False)
+    parser.add_argument('--fill_context_with', type=str, help='Fill the context with this string', default="")
 
     args = parser.parse_args()
 
@@ -106,6 +107,7 @@ def initialize_dataset_and_loader(
         gold_position=args.gold_position,
         get_documents_without_answer=args.get_documents_without_answer,
         multiply_gold=args.multiply_gold,
+        fill_context_with=args.fill_context_with,
     )
     prompt_dataloader = DataLoader(
         prompt_ds,
@@ -173,6 +175,8 @@ def generate_and_save(
             file_name = f"{saving_dir}/numdoc{num_doc}_gold_at{gold_pos}{rand_str}{answerless_str}_info_{idx+1}.pkl"
             if args.multiply_gold:
                 f"{saving_dir}/numdoc{num_doc}_multgold_info_{idx+1}.pkl"
+            elif args.fill_context_with != "":
+                f"{saving_dir}/numdoc{num_doc}_fillcont_{args.fill_context_with}_info_{idx+1}.pkl"
             write_pickle(all_info, file_name)
             all_info = []
 
