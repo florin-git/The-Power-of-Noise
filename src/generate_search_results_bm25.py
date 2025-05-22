@@ -145,6 +145,31 @@ def get_mid_score_noise_documents(scores: List[float], k_docs: int) -> tuple[
     return selected_indices, selected_scores
 
 
+def compute_bm25_search_results_for_one_query(retriever: bm25s.BM25, op_mode: str, query_text: str, k_docs: int):
+    """
+    Given a retriever object and a query, compute the BM25 scores for the query and return the top k documents according
+    to the op-mode. Assume retriever is already initialized.
+    Returns:
+    """
+    if op_mode == 'top_docs':
+        query_tokens = preprocess_text(query_text, get_query_token_list=False)
+        scores = None
+        top_indices, top_scores = retriever.retrieve(query_tokens, k=k_docs)
+    elif op_mode == 'low_score_noise':
+        # Get BM25 scores for all documents
+        query_tokens = preprocess_text(query_text, get_query_token_list=True)
+        scores = retriever.get_scores(query_tokens)
+        top_indices, top_scores = get_low_score_noise_documents(scores, k_docs)
+    elif op_mode == 'mid_score_noise':
+        # Get BM25 scores for all documents
+        query_tokens = preprocess_text(query_text, get_query_token_list=True)
+        scores = retriever.get_scores(query_tokens)
+        top_indices, top_scores = get_mid_score_noise_documents(scores, k_docs)
+    else:
+        raise ValueError(f"Invalid op_mode: {op_mode}")
+    return top_indices, top_scores, scores
+
+
 def compute_bm25_search_results(
         corpus: List[dict],
         queries: List[str],
@@ -168,22 +193,7 @@ def compute_bm25_search_results(
     search_results = []
     for query in tqdm(queries, desc="Computing BM25 scores"):
 
-        if op_mode == 'top_docs':
-            query_tokens = preprocess_text(query, get_query_token_list=False)
-            scores = None
-            top_indices, top_scores = bm25.retrieve(query_tokens, k=k_docs)
-        elif op_mode == 'low_score_noise':
-            # Get BM25 scores for all documents
-            query_tokens = preprocess_text(query, get_query_token_list=True)
-            scores = bm25.get_scores(query_tokens)
-            top_indices, top_scores = get_low_score_noise_documents(scores, k_docs)
-        elif op_mode == 'mid_score_noise':
-            # Get BM25 scores for all documents
-            query_tokens = preprocess_text(query, get_query_token_list=True)
-            scores = bm25.get_scores(query_tokens)
-            top_indices, top_scores = get_mid_score_noise_documents(scores, k_docs)
-        else:
-            raise ValueError(f"Invalid op_mode: {op_mode}")
+        top_indices, top_scores, scores = compute_bm25_search_results_for_one_query(bm25, op_mode, query, k_docs)
 
         if scores is not None and store_distribution_figures and current_num_distribution_figures < num_distribution_figures:
             # store score distribution figures
@@ -216,6 +226,7 @@ def compute_bm25_search_results(
         search_results.append((doc_ids, top_scores.tolist()))
 
     return search_results
+
 
 def initialize_bm25_retriever(load_idx: str, corpus: List[dict]=None):
     """Initialize the BM25 retriever. Either loads the index or computes the index by loading and tokenizing the corpus"""
