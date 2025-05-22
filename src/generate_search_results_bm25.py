@@ -260,7 +260,7 @@ def main(args):
     queries, gold_doc_idxs = load_queries(args.queries_path)
     logging.info("Computing BM25 search results ...")
     search_results = compute_bm25_search_results(corpus, queries, op_mode=args.op_mode, k_docs=args.k_docs, store_distribution_figures=args.save_distrib_figures, num_distribution_figures=args.num_distrib_figures)
-    logging.info("Saving search results to {} ...".format(args.search_results_path))
+    logging.info("Saving search results")
     save_search_results(args, search_results)
     print("Finished computing BM25 search results. Results saved to file.")
 
