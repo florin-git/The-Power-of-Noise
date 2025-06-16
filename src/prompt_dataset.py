@@ -5,8 +5,7 @@ from typing import List, Tuple, Dict, Any, Optional
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 
-import normalize_text
-from normalize_answers import *
+from src.normalize_answers import *
 
 
 class QueryDataset(Dataset):
@@ -591,8 +590,6 @@ class MixedDocumentsDataset(PromptDataset):
         return indices
     
 
-
-
 class MultiCorpusDataset(PromptDataset):
     """
     Extends PromptDataset to handle multiple corpora, merging documents from the main and another corpus
@@ -741,3 +738,88 @@ class MultiCorpusDataset(PromptDataset):
 
         return formatted_documents, document_indices
 
+
+class RerankerDataset(Dataset):
+    """
+    A dataset class for managing and processing data for a reranker model.
+
+    Attributes:
+        data_path (str): Path to the dataset file containing the query and related information.
+        model_name (str): The name of the language model used for generating answers.
+        do_normalize_query (bool): Flag to determine if text normalization is applied to the query.
+    """
+    def __init__(
+        self,
+        corpus: List[Dict],
+        data_path: str,
+        do_normalize_query: bool = False,
+        num_documents_in_context: int = 5,
+        gold_position: int = None,
+        full_to_subset_idx_map: Optional[Dict[int, int]] = None
+    ):
+        super().__init__()
+        self.corpus = corpus
+        self.data_path = data_path
+        self.do_normalize_query = do_normalize_query
+        self.num_documents_in_context = num_documents_in_context
+        self.gold_position = gold_position
+        self.item_ids = []
+        self.gold_documents = []
+        self.gold_document_idxs = []
+        self.answers = []
+        self.queries = []
+        self.full_to_subset_idx_map = full_to_subset_idx_map
+        self._load_data()
+
+    def _load_data(self):
+        """
+        Loads data from the specified path and processes it.
+        """
+        try:
+            with open(self.data_path, "r") as fin:
+                data = json.load(fin)
+            self.process_file_data(data)
+        except IOError as e:
+            print(f"Error reading file {self.data_path}: {e}")
+
+    def process_file_data(self, data):
+
+        for idx, item in enumerate(data):
+            item_id = str(item['example_id'])
+            self.item_ids.append(item_id)
+            gold_document_idx = item['idx_gold_in_corpus']
+
+            if self.full_to_subset_idx_map is not None:
+                old = gold_document_idx
+                gold_document_idx = self.full_to_subset_idx_map[gold_document_idx]
+            gold_doc_info = self.corpus[gold_document_idx]
+
+            gold_doc_idx = gold_doc_info['full_corpus_idx']
+            gold_title = gold_doc_info['title']
+            gold_text = gold_doc_info['text']
+
+            gold_doc_str = f"Document [{gold_doc_idx}](Title: {gold_title}) {gold_text}"
+            self.gold_documents.append(gold_doc_str)
+            self.gold_document_idxs.append(gold_doc_idx)
+
+            answers = item['answers']
+            self.answers.append(answers)
+            query = item['question']
+            if self.do_normalize_query:
+                query = normalize_text.normalize(query)
+            self.queries.append(query)
+
+
+    def __getitem__(self, idx: int):
+        item = {
+            "item_id": self.item_ids[idx],
+            "query": self.queries[idx],
+            "gold_document_idx": self.gold_document_idxs[idx],
+            "gold_document": self.gold_documents[idx],
+            "answers": self.answers[idx]
+        }
+        pass
+        return item
+
+    def __len__(self):
+        return len(self.queries)
