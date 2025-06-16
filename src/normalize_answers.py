@@ -1,7 +1,7 @@
 import regex
 import string
 from typing import List
-import normalize_text 
+import src.normalize_text as normalize_text
 
 # Normalization adapted from SQuAD evaluation script https://worksheets.codalab.org/rest/bundles/0x6b567e1cf2e041ec80d7098f031c5c9e/contents/blob/
 def remove_articles(text: str) -> str:

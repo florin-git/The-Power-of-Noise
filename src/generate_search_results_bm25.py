@@ -16,7 +16,7 @@ from numpy import ndarray, dtype, signedinteger
 import bm25s
 from tqdm import tqdm
 
-from utils import write_pickle
+from src.utils import write_pickle
 
 LOW_SCORE_PERCENTILE = 0.01
 MID_SCORE_RANGE_WIDTH = 0.25 # the range of mid scores is the rango lower-bounded by 0+(0.75/2) and upper-bounded by 1-(0.75/2)
