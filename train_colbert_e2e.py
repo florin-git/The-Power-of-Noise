@@ -1,7 +1,9 @@
 import argparse
+import os
 import time
 import pickle
 from typing import List
+
 from src.normalize_answers import *
 
 import torch
@@ -140,6 +142,26 @@ def read_corpus_with_adore():
         corpus_path
     )
 
+def save_model(args, colbert, optimizer, idx, savepath=None):
+    checkpoints_path = savepath or os.path.join(Run().path_, 'checkpoints')
+    name = None
+    print(checkpoints_path)
+
+    try:
+        save = colbert.save
+    except:
+        save = colbert.module.save
+
+    if not os.path.exists(checkpoints_path):
+        os.makedirs(checkpoints_path)
+
+    if idx != -1:
+        path_save = os.path.join(checkpoints_path, f"colbert-{idx}")
+    else:
+        path_save = os.path.join(checkpoints_path, "colbert_last")
+    save(path_save)
+    print(f"Saved checkpoint to {path_save}")
+
 
 def train(config: ColBERTConfig, triples, queries=None, collection=None):
     # reader = RerankBatcher(config, triples, queries, collection, (0 if config.rank == -1 else config.rank), config.nranks)
@@ -219,7 +241,8 @@ def train(config: ColBERTConfig, triples, queries=None, collection=None):
             sorted_indices = torch.argsort(reranker_scores, descending=True).cpu().numpy()
 
             probs = torch.softmax(reranker_scores, dim=-1)
-            log_probs = torch.log([probs[idx] for idx in sorted_indices[:args.num_documents_in_context-1]])
+            top_num_context = sorted_indices[:args.num_documents_in_context-1]
+            log_probs = torch.log(probs[top_num_context])
 
             best_passages = [passages[idx] for idx in sorted_indices[:args.num_documents_in_context-1]]
 
@@ -242,19 +265,23 @@ def train(config: ColBERTConfig, triples, queries=None, collection=None):
             answer_string_in_prompt = "### Response:" if 'mpt' in llm_id else "Answer:"
 
             if answer_string_in_prompt not in generated_output:
-                print(f"Skipping example due to missing answer string in output")
+                print(f"0 loss due to missing answer string in output")
                 ans_match_after_norm = False
             else:
-                print('YAAAAASS SOMETHING WORKIIIING (I do not expect to ever see this message :´( <- Crying emoji)')
                 start = generated_output.find(answer_string_in_prompt) + len(answer_string_in_prompt)
                 response = generated_output[start:].strip()
 
                 ans_match_after_norm: bool = are_answers_matching(response, answers[i])
-                ans_in_text = is_answer_in_text(prompt, answers[i])
 
             reward = 1.0 if ans_match_after_norm else 0.0
             loss = -reward * log_probs.sum()
-            loss.backward()
+            # loss.backward()
+            amp.backward(loss)
+        amp.step(colbert, optimizer, scheduler)
+        if idx % 1000 == 0 and idx != 0:
+            save_model(config, colbert, optimizer, idx, savepath='/mnt/2tb-1/louis/colbert')
+
+    save_model(config, colbert, optimizer, -1, savepath='/mnt/2tb-1/louis/colbert')
 
 
 
