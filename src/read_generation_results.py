@@ -132,8 +132,11 @@ def load_pickle_files(directory: str, filename_prefix: str) -> pd.DataFrame:
             data_list.extend(data)
     
     data_df = pd.DataFrame(data_list)
-    if 'only_query' in directory or 'reranker' in directory:
+    if 'only_query' in directory:
         data_df['example_id'] = data_df['example_id'].apply(lambda x: x.tolist())
+    elif 'reranker' in directory:
+        data_df['example_id'] = data_df['example_id'].apply(lambda x: [int(x)])
+
     else:
         data_df['document_indices'] = data_df['document_indices'].apply(convert_tensors)
 

@@ -153,7 +153,7 @@ def generate_and_save(
             documents_str = "\n".join(best_passages)
 
             task_instruction = "You are given a question and you MUST respond by EXTRACTING the answer (max 5 tokens) from one of the provided documents. If none of the documents contain the answer, respond with NO-RES."
-            prompt = f"""{task_instruction}\nDocuments:\n{documents_str}\nQuestion: {query[i]}"""
+            prompt = f"""{task_instruction}\nDocuments:\n{documents_str}\nQuestion: {query[i]}\nAnswer:"""
 
             tokens = llm.tokenizer.tokenize(prompt)
             tokens_len = len(tokens)
