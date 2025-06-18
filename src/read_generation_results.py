@@ -132,7 +132,7 @@ def load_pickle_files(directory: str, filename_prefix: str) -> pd.DataFrame:
             data_list.extend(data)
     
     data_df = pd.DataFrame(data_list)
-    if 'only_query' in directory:
+    if 'only_query' in directory or 'reranker' in directory:
         data_df['example_id'] = data_df['example_id'].apply(lambda x: x.tolist())
     else:
         data_df['document_indices'] = data_df['document_indices'].apply(convert_tensors)
@@ -256,7 +256,7 @@ def main():
         args.num_doc = args.num_documents_in_context
         filename_prefix = get_classic_path(args)
     elif prompt_type == 'reranker':
-        retriever_str = "adore/" if args.use_adore else "contriever/"
+        retriever_str = ""
         args.num_doc = args.num_documents_in_context
         filename_prefix = get_reranker_path(args)
     elif prompt_type == 'mixed':
@@ -291,7 +291,7 @@ def main():
     else:
         df = pd.read_json('data/10k_train_dataset.json')
 
-    if 'only_query' in directory:
+    if 'only_query' in directory or 'reranker' in directory:
         results = read_generation_results_only_query(data_path, df)
     else:
         results = read_generation_results(data_path, df)

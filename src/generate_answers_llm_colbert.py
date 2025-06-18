@@ -116,7 +116,7 @@ def generate_and_save(
 
     # Create the saving directory
     llm_folder = llm_id.split("/")[1] if '/' in llm_id else llm_id
-    saving_dir = f"{args.output_dir}/{llm_folder}/train/classic/reranker/{num_doc}_doc"
+    saving_dir = f"{args.output_dir}/{llm_folder}/train/reranker/{num_doc}_doc"
     if not os.path.exists(saving_dir):
         os.makedirs(saving_dir)
 
