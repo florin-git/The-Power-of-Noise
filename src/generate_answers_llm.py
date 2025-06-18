@@ -163,6 +163,8 @@ def generate_and_save(
         
         generated_answers = []
         for output in generated_output:
+            if answer_string_in_prompt not in output:
+                print("Also happening here!")
             start = output.find(answer_string_in_prompt) + len(answer_string_in_prompt)
             response = output[start:].strip()
             generated_answers.append(response)

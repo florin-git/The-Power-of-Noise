@@ -171,32 +171,16 @@ def train(config: ColBERTConfig, triples, queries=None, collection=None):
     colbert = colbert.to(device)
     colbert.train()
 
-    # dist.init_process_group(backend="nccl" if torch.cuda.is_available() else "gloo")
-    #
-    # colbert = torch.nn.parallel.DistributedDataParallel(colbert, device_ids=[config.rank], output_device=config.rank, find_unused_parameters=True)
-
     optimizer = AdamW(filter(lambda p: p.requires_grad, colbert.parameters()), lr=config.lr, eps=1e-8)
     optimizer.zero_grad()
 
     scheduler = None
-
-    # if config.warmup is not None:
-    #     print(f"#> LR will use {config.warmup} warmup steps and linear decay over {config.maxsteps} steps.")
-    #     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=config.warmup,
-    #                                                 num_training_steps=config.maxsteps)
 
     warmup_bert = config.warmup_bert
     if warmup_bert is not None:
         set_bert_grad(colbert, False)
 
     amp = MixedPrecisionManager(config.amp)
-    labels = torch.zeros(config.bsize, dtype=torch.long, device=device)
-
-    start_time = time.time()
-    train_loss = None
-    train_loss_mu = 0.999
-
-    start_batch_idx = 0
 
     args = parse_arguments()
 

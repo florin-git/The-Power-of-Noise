@@ -32,12 +32,15 @@ info = {
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Run LLM Generation with reranker.")
+    parser.add_argument('--corpus_path', type=str, default='data/corpus.json', help='Path to the corpus file.')
     parser.add_argument('--output_dir', type=str, default='data/gen_res/reranked', help='Output directory')
     parser.add_argument('--llm_id', type=str, default='meta-llama/Llama-2-7b-chat-hf', help='LLM model identifier')
+    parser.add_argument('--checkpoint', type=str, default=None, help='Checkpoint path for the reranker')
     parser.add_argument('--model_max_length', type=int, help='Maximum input length for the LLM model', default=4096)
     parser.add_argument('--load_idx', type=str, help='Load a specific index of the corpus', default=None)
     parser.add_argument('--gold_position', type=int, help='The (0-indexed) position of the gold document in the context')
     parser.add_argument('--num_documents_in_context', type=int, help='Total number of documents in the context')
+    parser.add_argument('--noise_type', type=str, default='low_score_noise')
     parser.add_argument('--max_new_tokens', type=int, help='Maximum number of tokens to generate', default=15)
     parser.add_argument('--batch_size', type=int)
     parser.add_argument('--save_every', type=int, default=250)
@@ -59,7 +62,7 @@ def load_corpus(
 ) -> Tuple[List[Dict], Optional[Dict[int, int]]]:
     # Load the corpus
 
-    corpus = read_corpus_json('data/corpus.json')
+    corpus = read_corpus_json(args.corpus_path)
     return corpus, None
 
 
@@ -90,11 +93,8 @@ def print_info(args: argparse.Namespace):
     print("INFO:")
     print(f"DATA: {info['data_path']}")
     print(f"MODEL: {args.llm_id}")
-    print(f"USE RANDOM IN CONTEXT: {args.use_random}")
-    print(f"USE ADORE: {args.use_adore}")
     print(f"GOLD POSITION: {args.gold_position}")
     print(f"NUM DOCUMENTS IN CONTEXT: {args.num_documents_in_context}")
-    print(f"DOCUMENTS WITHOUT ANSWER: {args.get_documents_without_answer}")
     print(f"BATCH SIZE: {args.batch_size}")
     print(f"SAVE EVERY: {args.save_every}")
 
@@ -128,9 +128,13 @@ def generate_and_save(
 
     all_info = []
     for idx, batch in enumerate(tqdm(reranker_dataloader)):
-        query = [b['query'] for b in batch]
-        gold_document = [b['gold_document'] for b in batch]
-        answers = [b['answers'] for b in batch]
+        # query = [b['query'] for b in batch]
+        # gold_document = [b['gold_document'] for b in batch]
+        # answers = [b['answers'] for b in batch]
+
+        query = [batch['query']]
+        gold_document = [batch['gold_document']]
+        answers = [batch['answers']]
 
         for i in range(len(query)):
             idxs, scores, _ = compute_bm25_search_results_for_one_query(bm25, op_mode=args.noise_type, query_text=query[i], k_docs=k_docs)
@@ -158,30 +162,17 @@ def generate_and_save(
                 continue  # Skip adding this example
 
             generated_out = llm.generate(prompt, max_new_tokens=args.max_new_tokens)
-            generated_output = generated_out[0]  # Assuming the output is a list of strings
+            output = generated_out[0]  # Assuming the output is a list of strings
 
-            # answer_string_in_prompt = "### Response:" if 'mpt' in llm_id else "Answer:"
-            #
-            # if answer_string_in_prompt not in generated_output:
-            #     print(f"0 loss due to missing answer string in output")
-            #     ans_match_after_norm = False
-            # else:
-            #     start = generated_output.find(answer_string_in_prompt) + len(answer_string_in_prompt)
-            #     response = generated_output[start:].strip()
-            #
-            #     ans_match_after_norm: bool = are_answers_matching(response, answers[i])
 
-        # prompts = prompt_batch['prompt']
-        # generated_output = llm.generate(prompts, max_new_tokens=args.max_new_tokens)
+            start = output.find(answer_string_in_prompt) + len(answer_string_in_prompt)
+            response = output[start:].strip()
 
-            generated_answers = []
-            for output in generated_output:
-                start = output.find(answer_string_in_prompt) + len(answer_string_in_prompt)
-                response = output[start:].strip()
-                generated_answers.append(response)
-
-            prompt_batch['generated_answer'] = generated_answers
-            all_info.append(prompt_batch)
+            # batch[i]['generated_answer'] = response
+            # batch[i]['prompt'] = prompt
+            batch['generated_answer'] = response
+            batch['prompt'] = prompt
+            all_info.append(batch)
 
             if (idx + 1) % save_every == 0 or (idx + 1) == len(reranker_dataloader):
                 print(f"Saving at {idx + 1}...")
@@ -205,9 +196,10 @@ def main():
     print("Loading reranker...")
     config = None
     config = ColBERTConfig.from_existing(config, Run().config)
-    colbert = ElectraReranker.from_pretrained(config.checkpoint)
+    checkpoint = args.checkpoint if args.checkpoint else 'google/electra-base-discriminator'
+    print(f'Using checkpoint for ElectraReranker: {checkpoint}')
+    colbert = ElectraReranker.from_pretrained(checkpoint)
     colbert = colbert.to(device)
-
 
     print("Loading corpus...")
     corpus, full_to_subset_idx_map = load_corpus(args)
@@ -223,7 +215,7 @@ def main():
     print("Initializing BM25 retriever... ", end ="")
     bm25 = initialize_bm25_retriever(load_idx=args.load_idx)
     print("Done")
-    bert_tokenizer = RerankerTokenizer(total_maxlen=config.doc_maxlen, base=config.checkpoint)
+    bert_tokenizer = RerankerTokenizer(total_maxlen=config.doc_maxlen, base=checkpoint)
 
     print_info(args)
     generate_and_save(args, llm, prompt_dataloader, colbert, bm25, corpus, bert_tokenizer)

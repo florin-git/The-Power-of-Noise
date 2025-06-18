@@ -812,13 +812,12 @@ class RerankerDataset(Dataset):
 
     def __getitem__(self, idx: int):
         item = {
-            "item_id": self.item_ids[idx],
+            "example_id": self.item_ids[idx],
             "query": self.queries[idx],
             "gold_document_idx": self.gold_document_idxs[idx],
             "gold_document": self.gold_documents[idx],
             "answers": self.answers[idx]
         }
-        pass
         return item
 
     def __len__(self):
