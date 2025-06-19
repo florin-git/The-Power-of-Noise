@@ -77,10 +77,10 @@ def read_generation_results_only_query(file_path: str, df: pd.DataFrame) -> List
         file_data = json.load(fin)
 
         for example in file_data:
-            example_ids = example['example_id']
-            queries = example['query']
-            prompts = example['prompt']
-            generated_answers = example['generated_answer']
+            example_ids = example['example_id'] if type(example['example_id']) == list else [example['example_id']]
+            queries = example['query'] if type(example['query']) == list else [example['query']]
+            prompts = example['prompt'] if type(example['prompt']) == list else [example['prompt']]
+            generated_answers = example['generated_answer'] if type(example['generated_answer']) == list else [example['generated_answer']]
 
             for i in range(len(example_ids)):
                 example_id = example_ids[i]
