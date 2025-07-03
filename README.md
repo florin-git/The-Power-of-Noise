@@ -122,7 +122,7 @@ In the closed-book QA configuration, the system generates answers based solely o
 
 #### Gold & Distracting/Random
 
-This configuration aims to replicate the first two tables of the paper, exploring how the inclusion of gold documents and distracting/random documents affects the performance. The script `src/generate_answers_llm.py` is used to manage this setup. For instance, to reproduce a scenario `Far` where the gold document is positioned last in a context of seven documents (one gold and six *distracting*), the script below can be run for Llama-2-7b-chat :
+This configuration aims to replicate the first two tables of the paper, exploring how the inclusion of gold documents and distracting/random documents affects the performance. The script `src/generate_answers_llm.py` is used to manage this setup. For instance, to reproduce a scenario `Near` where the gold document is positioned last in a context of seven documents (one gold and six *distracting*), the script below can be run for Llama-2-7b-chat :
 ```
 python src/generate_answers_llm.py \
     --output_dir data/gen_res \
